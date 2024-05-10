@@ -33,7 +33,7 @@ def track_video(video_path, session_type, save_labels=True, return_labels=False)
     # process video
     predictions = sleap_predictor.predict(video)
     # save results
-    output_filename = ".".join(video_path.name.split(".")[:-1]) + ".predicted.h5"
+    output_filename = ".".join(video_path.name.split(".")[:-1]) + f".predicted_{datetime.now().isoformat()}.h5"
     predictions.export(str(SLEAP_PATH / output_filename))
     if return_labels:
         return predictions
@@ -71,22 +71,32 @@ def load_sleap_predictor(session_type, batch_size=4):
 def get_video_paths_df():
     """
     Returns a pd.Dataframe with data extracted from video filenames,
-    (rows: sessions, columns: datetime, video_path, vidoe_sync_pulse_path).
-    Will later match to pycontrol sessions with nearest datetime. Note some errors in
-    the video filenames (wrong subject, wrong session type etc. havn't been fixed in the video files
-    but datetimes should always line up so that is all we need).
-
-    note session_types for obj vect sessions are just open_field in video filenames
+        rows: sessions,
+        columns:
+            subject_ID: str
+            session_type: str (maze, open_field, etc..)
+            datetime: datetime object
+            video_path: str (relative path to raw video file)
+            tracking_completed: bool (if sleap tracking has been performed on video from session)
     """
     all_video_files = [f.name for f in Path(VIDEO_PATH).iterdir() if f.suffix == ".mp4"]
-    all_sync_pulse_files = [f.name for f in Path(VIDEO_PATH).iterdir() if f.suffix == ".csv"]
+    all_sleap_files = [f.name for f in Path(SLEAP_PATH).iterdir() if f.suffix == ".h5"]
+    all_sleap_original_datetime_strings = [  # datetimes_strings of original videos predictions were made on
+        f.split(".")[1].split("_")[-3] for f in all_sleap_files
+    ]
     video_paths_info = []
     for video_file in all_video_files:
+        session_type = video_file.split(".")[1].split("_")[:-1]
+        session_type = session_type[0] if len(session_type) == 1 else "_".join(session_type)
+        session_datetime_string = video_file.split("_")[-1].split(".")[0]
+        tracking_completed = True if session_datetime_string in all_sleap_original_datetime_strings else False
         video_paths_info.append(
             {
                 "subject_ID": video_file.split(".")[0],
-                "datetime": datetime.strptime(video_file.split("_")[-1].split(".")[0], "%Y-%m-%d-%H%M%S"),
+                "session_type": session_type,
+                "datetime": datetime.strptime(session_datetime_string, "%Y-%m-%d-%H%M%S"),
                 "video_path": str(Path(VIDEO_PATH) / video_file),
+                "tracking_completed": tracking_completed,
             }
         )
     video_paths_df = pd.DataFrame(video_paths_info)
