@@ -1,3 +1,11 @@
+"""
+This script contains functions to track body-part positions from GridMaze experiments using SLEAP, running parallel jobs on 
+a SLURM managed HPC."
+
+Before running script, ensure that SLEAP models have been moved from the local computer where they were developed to ./models
+Further, ensure that ./jobs/slurm, ./jobs/out, and ./jobs/err folders exist in the working directory.
+"""
+
 # %% imports
 import sleap
 from pathlib import Path
@@ -26,8 +34,16 @@ SLEAP_PATH = Path("../data/preprocessed_data/SLEAP")
 
 
 def run_sleap_preprocessing():
+    """
+    This function 
+    """
     video_paths_df = get_video_paths_df()
     video_paths_df = video_paths_df[~video_paths_df.tracking_completed]
+    # check jobs folders exist
+    for jobs_folder in ["slurm", "out", "err"]:
+        if not Path(f"mazeSLEAP/jobs/{jobs_folder}").exists():
+            os.mkdir(f"mazeSLEAP/jobs/{jobs_folder}")
+    # submit jobs to HPC
     for session_info in video_paths_df.itertuples():
         print(f"Submitting {session_info.video_path} to HPC")
         script_path = get_sleap_SLURM_script(session_info)
@@ -100,7 +116,12 @@ def load_sleap_predictor(session_type, batch_size=16):
         else:
             model_path = model_paths.append(str(model_path[0]))
     sleap_predictor = sleap.load_model(
-        model_paths, batch_size=batch_size, tracker="flow", tracker_max_instances=1, max_instances=1, progress_reporting='json'
+        model_paths,
+        batch_size=batch_size,
+        tracker="flow",
+        tracker_max_instances=1,
+        max_instances=1,
+        progress_reporting="json",
     )
     return sleap_predictor
 
@@ -138,3 +159,23 @@ def get_video_paths_df():
         )
     video_paths_df = pd.DataFrame(video_paths_info)
     return video_paths_df
+
+    # %%
+
+
+if __name__ == "__main__":
+    # check necessary folders exits
+    if not SLEAP_MODELS_PATH.exists():
+        raise FileNotFoundError(f"Models folder not found at {SLEAP_MODELS_PATH}")
+    elif not VIDEO_PATH.exists():
+        raise FileNotFoundError(f"Video folder not found at {VIDEO_PATH}")
+    elif not SLEAP_PATH.exists():
+        raise FileNotFoundError(f"SLEAP folder not found at {SLEAP_PATH}")
+    elif not Path("mazeSLEAP/jobs/slurm").exists():
+        raise FileNotFoundError(f"jobs folder not found at mazeSLEAP/jobs/slurm,")
+    elif not Path("mazeSLEAP/jobs/out").exists():
+        raise FileNotFoundError(f"jobs folder not found at mazeSLEAP/jobs/out,")
+    elif not Path("mazeSLEAP/jobs/err").exists():
+        raise FileNotFoundError(f"jobs folder not found at mazeSLEAP/jobs/err,")
+
+    run_sleap_preprocessing()
