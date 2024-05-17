@@ -1,3 +1,24 @@
-/models/
+# Exclude everything in the models folder, but not the folder itself
+/models/*
+!/models/
+
+# Exclude everything in the jobs folder
+/jobs/*
+
+# Re-include the specific folders under jobs
+!/jobs/error/
+!/jobs/out/
+!/jobs/slurm/
+
+# Exclude everything inside the re-included folders
+/jobs/error/*
+/jobs/out/*
+/jobs/slurm/*
+
+# Re-include the re-included folders again to keep them in the repo
+!/jobs/error/
+!/jobs/out/
+!/jobs/slurm/
+
+# Exclude __pycache__ folders
 __pycache__/
-/jobs/
