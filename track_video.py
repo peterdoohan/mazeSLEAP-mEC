@@ -37,6 +37,9 @@ def run_sleap_preprocessing():
     """ """
     video_paths_df = get_video_paths_df()
     video_paths_df = video_paths_df[~video_paths_df.tracking_completed]
+    if video_paths_df.empty:
+        print("All videos have been tracked. No new videos to track.")
+        return
     # check jobs folders exist
     for jobs_folder in ["slurm", "out", "err"]:
         if not Path(f"mazeSLEAP/jobs/{jobs_folder}").exists():
@@ -48,7 +51,11 @@ def run_sleap_preprocessing():
     print("All video tracking jobs submitted to HPC. Check progress with 'squeue -u <username>'")
 
 
+<<<<<<< HEAD
+def get_sleap_SLURM_script(video_info, RAM="128GB", time_limit="24:00:00"):
+=======
 def get_sleap_SLURM_script(video_info, RAM="128GB", time_limit="20:00:00"):
+>>>>>>> 35a83ac9d298a00c2bb30df69fc2bd71ea309b4f
     """
     Writes a SLURM script to run sleap tracking on the video from a session specified in video_info.
     Input: video_info: pd.Series, with columns: subject_ID, session_type, datetime, video_path (row from the output of get_video_paths_df())
