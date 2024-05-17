@@ -4,11 +4,8 @@ a SLURM managed HPC."
 
 Before running script, ensure that SLEAP models have been moved from the local computer where they were developed to ./models
 Further, ensure that ./jobs/slurm, ./jobs/out, and ./jobs/err folders exist in the working directory.
-<<<<<<< HEAD
-=======
 
 @peterdoohan
->>>>>>> c4dc9162831a64815d86007f5d164a0eff13bded
 """
 
 # %% imports
@@ -37,23 +34,16 @@ SLEAP_PATH = Path("../data/preprocessed_data/SLEAP")
 
 
 def run_sleap_preprocessing():
-<<<<<<< HEAD
-    """
-    This function 
-    """
-=======
     """ """
->>>>>>> c4dc9162831a64815d86007f5d164a0eff13bded
     video_paths_df = get_video_paths_df()
     video_paths_df = video_paths_df[~video_paths_df.tracking_completed]
+    if video_paths_df.empty:
+        print("All videos have been tracked. No new videos to track.")
+        return
     # check jobs folders exist
     for jobs_folder in ["slurm", "out", "err"]:
         if not Path(f"mazeSLEAP/jobs/{jobs_folder}").exists():
             os.mkdir(f"mazeSLEAP/jobs/{jobs_folder}")
-<<<<<<< HEAD
-    # submit jobs to HPC
-=======
->>>>>>> c4dc9162831a64815d86007f5d164a0eff13bded
     for session_info in video_paths_df.itertuples():
         print(f"Submitting {session_info.video_path} to HPC")
         script_path = get_sleap_SLURM_script(session_info)
@@ -61,7 +51,7 @@ def run_sleap_preprocessing():
     print("All video tracking jobs submitted to HPC. Check progress with 'squeue -u <username>'")
 
 
-def get_sleap_SLURM_script(video_info, RAM="128GP", time_limit="20:00:00"):
+def get_sleap_SLURM_script(video_info, RAM="128GB", time_limit="24:00:00"):
     """
     Writes a SLURM script to run sleap tracking on the video from a session specified in video_info.
     Input: video_info: pd.Series, with columns: subject_ID, session_type, datetime, video_path (row from the output of get_video_paths_df())
@@ -175,14 +165,8 @@ def get_video_paths_df():
     video_paths_df = pd.DataFrame(video_paths_info)
     return video_paths_df
 
-<<<<<<< HEAD
-    # %%
-
-
-=======
 
 # %% Main
->>>>>>> c4dc9162831a64815d86007f5d164a0eff13bded
 if __name__ == "__main__":
     # check necessary folders exits
     if not SLEAP_MODELS_PATH.exists():
@@ -191,14 +175,5 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"Video folder not found at {VIDEO_PATH}")
     elif not SLEAP_PATH.exists():
         raise FileNotFoundError(f"SLEAP folder not found at {SLEAP_PATH}")
-<<<<<<< HEAD
-    elif not Path("mazeSLEAP/jobs/slurm").exists():
-        raise FileNotFoundError(f"jobs folder not found at mazeSLEAP/jobs/slurm,")
-    elif not Path("mazeSLEAP/jobs/out").exists():
-        raise FileNotFoundError(f"jobs folder not found at mazeSLEAP/jobs/out,")
-    elif not Path("mazeSLEAP/jobs/err").exists():
-        raise FileNotFoundError(f"jobs folder not found at mazeSLEAP/jobs/err,")
-=======
->>>>>>> c4dc9162831a64815d86007f5d164a0eff13bded
 
     run_sleap_preprocessing()
