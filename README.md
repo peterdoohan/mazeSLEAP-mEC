@@ -159,7 +159,7 @@ See the [SLEAP documentation](https://sleap.ai/tutorials/assisted-labeling.html)
     - eg, ```C57B6_BigMaze_Neuropixel-1.240508_094436.centroid.n=665```
 
 
-### STEP 3: Set up a conda environment with SLEAP on the HPC
+### STEP 2: Set up a conda environment with SLEAP on the HPC
 - Set up a conda environment with sleap on your remote machine following the [SLEAP documentation](https://sleap.ai/installation.html).
 
 ### STEP 3: Update track_video.py
@@ -177,7 +177,7 @@ See the [SLEAP documentation](https://sleap.ai/tutorials/assisted-labeling.html)
     ```
     to check that your model(s) are loading correclty. 
 
-### STEP 3: Submitting jobs to the cluster
+### STEP 4: Submitting jobs to the cluster
 - Next, generate a pd.DataFrame with information about the raw data videos from your experiment to be processed. From the same iPython terminal or interactive-notebook generated above run:
     ```
     video_paths_df = tv.get_video_paths_df()
