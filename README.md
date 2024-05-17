@@ -109,11 +109,25 @@ See the [SLEAP documentation](https://sleap.ai/tutorials/assisted-labeling.html)
 - Training can take a few hours
 
 ### STEP 6: Model Assessment
-- 
+- to get a feel for your model's performance post training, download a new video from Ceph to your local computer and load it into your SLEAP project, same as described in [STEP 3](#step-3-download-training-videos). 
+- get suggested frames from you new video, same as described in [STEP 4](#prediciting-unlabeled-frames), except with the ```Target``` variable under ```Labeling Suggestions``` set to ```current video``` (after having double clicked on your new video in the video's tab). 
+- Predict the labels on your new unlabeled frames by clicking ```Predict > Run Inferences...```, same as described in [STEP 4](#prediciting-unlabeled-frames)
+- Check the model's predictions (new instances) visually. 
+    - if its getting every body part spot on in almost every frame - you're done with local developement! 
+    - if the model is missing the mouse all together or body-parts are not labelled well, download more videos, label more frames, and retrain the model (repeating STEPS 3-5). 
 
 ## Run SLEAP tracking on the HPC
+- Once you are happy with your model's performance one some test frames, we can start tracking body-parts over entire session videos. 
+- Running tracking on a full video can take an hour or two and requires a GPU. To speed things up we can processes many sessions in parallel, with multiple GPUs on the SWC's HPC. 
 
 ### STEP 1: Move models to Ceph
+- You should have set up your project locally and on Ceph with the GridMaze standard folder structure, follow the documentation in [GridMaze-preprocessing](https://github.com/cognitive-circuits/GridMaze-preprocessing) for more info
+- Clone this repo to your project's code folder:
+    ````
+    cd <GridMaze_project>/experiment/code
+    git clone https://github.com/peterdoohan/mazeSLEAP-mEC.git
+    ````
+- Add additional folders for /models
 
 ### STEP 2: Update Global Variables in track_video.py
 
