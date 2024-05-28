@@ -4,8 +4,9 @@ SLEAP is a deep-learning based framework for multi-animal pose tracking develope
 ## Overview 
 This repository contains code and outlines the steps to preprocesses raw data collected from GridMaze experiments (.mp4 video files) into preprocessed tracking data (.h5 file) that lists the pixel coordinates of each mouse body-part over frames of video. To do this we start with model development and validation on a local computer and then move to the HPC to run parallelised tracking on large datasets.  
 
-![overview diagram](./docs/images/overview.png)
-
+<div style="text-align: center;">
+  <img src="./docs/images/overview.png" alt="overview diagram" width="800"/>
+</div>
 
 ## Local SLEAP Model Development
 
@@ -78,13 +79,17 @@ Your local SLEAP folder should be strucuted as above, with a top level ```models
         - select the ```training_config.json``` in the ```SLEAP/models/<existing_model>/models``` folder that corresponds to the ```.centered_instance``` model. 
     - then hit ```Run``` 
 - Now if you return to your suggested frames (and double click on one), you will see models best guess at where the body parts are! 
-![Example Predicted Instance]()
+    <div style="text-align: center;">
+        <img src="./docs/images/inference_mouse.png" alt="" width="400"/>
+    </div>
 
 #### Correcting Inital Predictions
 - To refine your model you will need to correct labelling mistakes.
 - On each of your labelled frames double click on the skeleton and this should change the color and start showing the body-part names of each node. 
 - Drag each node to its correct position (see [Body-part Definitions](#body-part-definitions))
-![Example Labeled Instance]()
+    <div style="text-align: center;">
+        <img src="./docs/images/labelled_mouse.png" alt="" width="400"/>
+    </div>
 - If the initial preidiction failed to find an instance (the mouse) on a given frame just find the zoom into the mouse on the frame, right click  and select ```Add Instance: Average```. Then drag the skeleton nodes to their correct position. 
 - Repeat this for all suggested frames (or as many as you can manage). 
 
@@ -94,17 +99,23 @@ See the [SLEAP documentation](https://sleap.ai/tutorials/assisted-labeling.html)
 - Now its time to use you labeled frames to imporve your SLEAP model. 
 - Click ```Predict > Run Training ...```
     - Configures setting under ```Training Pipeline``` as:
-        ! [Training Pipeline Settings]()
+        <div style="text-align: center;">
+            <img src="./docs/images/training_pipeline_settings.png" alt="" width="600"/>
+        </div>
     - Under ```Centroid Model configuration```:
         - Select the centroid training config of the model you have initialised off (see [Predicting Unlabeled Frames](#prediciting-unlabeled-frames))or a previous configuration of your new model if you have run this step already. 
         - Select ```Resume Training```
         - Configure the other settings as:
-        ![Centroid Model Configuration Settings]()
+        <div style="text-align: center;">
+            <img src="./docs/images/centroid_training_config.png" alt="" width="600"/>
+        </div>
     - Under ```Centered Instance Model Configuration```:
         - Select the centered_instance training config same as above
         - Select ```Resume Training```
         - Configure the other settings as:
-        ![Centered Instance Configuration Settings]()
+        <div style="text-align: center;">
+            <img src="./docs/images/training_centered_instance_config.png" alt="" width="600"/>
+        </div>
 - Hit ```Run``` to start training
 - Training can take a few hours
 
@@ -127,13 +138,93 @@ See the [SLEAP documentation](https://sleap.ai/tutorials/assisted-labeling.html)
     cd <GridMaze_project>/experiment/code
     git clone https://github.com/peterdoohan/mazeSLEAP-mEC.git
     ````
-- Add additional folders for /models
+- Ensure that a models folder and jobs folders as in the repository so it has the following folder structure:
+    ```
+    Remote: mazeSLEAP/
+    ├── models/
+    │   ├── ...session_type_1.centroid...
+    │   ├── ...session_type_1.centered_instance...
+    │   ├── ...session_type_2.centroid...
+    │   ├── ...session_type_2.centered_instance...
+    │   └── ...
+    ├── jobs/
+    │   ├── slurm
+    │   ├── err
+    │   └── out
+    ├── track_video.py
+    └── .gitignore
+    ```
+- Next, upload the model you developed locally to ```mazeSLEAP/models```. You should have a centroid and centered instance model for each session_type in your experiment.
+    - model folder names copied directly from your SLEAP model folder should look like: ```<model_name>.datetime_created.<centroid OR centered_instance>.n=<n labeled frames>```
+    - eg, ```C57B6_BigMaze_Neuropixel-1.240508_094436.centroid.n=665```
 
-### STEP 2: Update Global Variables in track_video.py
 
-### STEP 3: Submitting jobs to the cluster
+### STEP 2: Set up a conda environment with SLEAP on the HPC
+- Set up a conda environment with sleap on your remote machine following the [SLEAP documentation](https://sleap.ai/installation.html).
+
+### STEP 3: Update track_video.py
+- Open ```track_video.py``` from you cloned repo and maze any necessary changes:
+    - Update the ```SESSION_TYPE2SLEAP_MODEL_NAME``` global variable with the session types and model names from you experiment 
+    - eg, for maze sessions that will use the model from ```C57B6_BigMaze_Neuropixel-1.240508_094436.centroid.n=665``` folder enter:
+        ```
+        SESSION_TYPE2SLEAP_MODEL_NAM = {'maze':'C57B6_BigMaze_Neuropixel-1'}
+        ```
+    - the other global variables shouldn't need changes, unless you are saving your raw_data and preprocessed_data differently to GridMaze standard.
+- In an iPython terminal or interactive-notebook running from your code folder, run:
+    ```
+    from mazeSLEAP import track_video as tv
+    predictor = tv.load_sleap_predictor('maze') 
+    ```
+    to check that your model(s) are loading correclty. 
+
+### STEP 4: Submitting jobs to the cluster
+- Next, generate a pd.DataFrame with information about the raw data videos from your experiment to be processed. From the same iPython terminal or interactive-notebook generated above run:
+    ```
+    video_paths_df = tv.get_video_paths_df()
+    ```
+- Inspecting this dataframe will show you information about all the videos from your experiment and whether sleap preprocessing has already been completed for a given session session ('tracking_completed' column). 
+    - if you get an error trying to generate the ```video_paths_df``` its likely because the naming convention in your video files differs from other datasets and you may need to update code in the ```get_video_paths_df``` function to account for this. 
+- Once you have made these check simply run:
+    ```
+    tv.run_sleap_preprocessing()
+    ```
+    in your iPython terminal or interactive-notebook or simply run track_video.py from the command line. 
+    - This function submits a job to the HPC For every unprocessed session in ```video_paths_df``` to track the body-parts in the raw_data video and save the outputs as an .h5 file in ```data/preprocessed_data/SLEAP```. 
+    - These files are later loaded in GridMaze-prepocessing and processed further. 
+- Note:
+    - Some of the jobs submitted to the cluster with fail (usually due to not enough GPU ram being allocated to the job). 
+    - Rerunning: 
+        ```
+        tv.run_sleap_preprocessing()
+        ```
+        will resubmit any sessions that have not been processed yet. 
+    - You can check which sessions have not been preprocessed get by running:
+        ```
+        from mazeSLEAP import track_video as tv
+        video_paths_df = tv.get_video_paths_df()
+        print(video_paths_df[~video_paths_df.tracking_completed])
+        ```
 
 ## Body-part Definitions
+GridMaze-preprocessing requires the following body-parts to be labelled on each video-frame of a session:
+- **head_front**: Nose of the mouse
+- **head_mid**: Middle of the head, just behind the midpoint between the eyes
+- **head_back**: Back of the head, just behind the midline of the ears
+- **ear_L**: Back of the left ear where the fur meets the skin
+- **ear_R**: Back of the right ear where the fur meets the skin
+- **body_front**: Midpoint between left and right hands
+- **body_mid**: Midpoint betwen left and right feet
+- **body_back**: Base of the tail
+
+<div style="text-align: center;">
+  <img src="docs/images/body-part_labels.png" alt="body-part definitions" width="400"/>
+</div>
+Above is schematic of where to mark each body-part during SLEAP labelling. 
 
 ## Choosen Model Architecture
+- SLEAP offers differnt model architectures, after some inital testing we have opted to use their 'top-down' model. 
+- the top-down model consists of two netowrks
+    - the ```centroid``` model that finds the animal in each frame, then
+    - the ```centered_instance``` model estimates the pose of each frame.
+- see the [SLEAP documentation](https://sleap.ai/tutorials/initial-training.html) for more details
 
