@@ -22,10 +22,7 @@ SLEAP_MODELS_PATH = Path(
 )  # this folder should contain one centroid & centered instance model for each experimental session type
 
 SESSION_TYPE2SLEAP_MODEL_NAME = {  # which sleap model to use for processing video from each session type
-    "maze": "C57B6_BigMaze_Neuropixel-1",
-    "open_field": "C57B6_OpenField_Neuropixel-1",
-    "object_open_field_1": "C57B6_ObjectOpenField_Neuropixel-1",
-    "object_open_field_2": "C57B6_ObjectOpenField_Neuropixel-1",
+    "maze_no-implant": "C57B6_BigMaze_NoImplant",
 }
 VIDEO_PATH = Path("../data/raw_data/video")
 SLEAP_PATH = Path("../data/preprocessed_data/SLEAP")
@@ -44,7 +41,7 @@ def run_sleap_preprocessing():
     for jobs_folder in ["slurm", "out", "err"]:
         if not Path(f"mazeSLEAP/jobs/{jobs_folder}").exists():
             os.mkdir(f"mazeSLEAP/jobs/{jobs_folder}")
-    for session_info in video_paths_df.itertuples():
+    for session_info in video_paths_df[:1].itertuples():
         print(f"Submitting {session_info.video_path} to HPC")
         script_path = get_sleap_SLURM_script(session_info)
         os.system(f"sbatch {script_path}")
@@ -112,7 +109,7 @@ def load_sleap_predictor(session_type, batch_size=16):
             p
             for p in all_model_paths
             if p.name.split(".")[0] == SESSION_TYPE2SLEAP_MODEL_NAME[session_type]
-            and p.name.split(".")[2] == model_type
+            and p.name.split(".")[1] == model_type
         ]
         if len(model_path) != 1:
             raise FileNotFoundError(
@@ -149,15 +146,14 @@ def get_video_paths_df():
     ]
     video_paths_info = []
     for video_file in all_video_files:
-        session_type = video_file.split(".")[1].split("_")[:-1]
-        session_type = session_type[0] if len(session_type) == 1 else "_".join(session_type)
-        session_datetime_string = video_file.split("_")[-1].split(".")[0]
+        subject= video_file.split('_')[0]
+        session_datetime_string = video_file.split('_')[1].split('.')[0]
         tracking_completed = True if session_datetime_string in all_sleap_original_datetime_strings else False
         video_paths_info.append(
             {
-                "subject_ID": video_file.split(".")[0],
-                "session_type": session_type,
+                "subject_ID": subject,
                 "datetime": datetime.strptime(session_datetime_string, "%Y-%m-%d-%H%M%S"),
+                "session_type": "maze_no-implant",
                 "video_path": str(Path(VIDEO_PATH) / video_file),
                 "tracking_completed": tracking_completed,
             }
